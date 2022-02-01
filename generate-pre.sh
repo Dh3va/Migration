@@ -25,6 +25,11 @@ PATH_ENDECA='/etc/rc3.d'
 # Script
 HOSTNAMEVM=$(hostname -s)
 
+ENDECA=$(if [[ "${HOSTNAMEVM}" == *end* ]] && [ -L "${PATH_ENDECA}"/S95endeca ]; then
+        sudo rm "${PATH_ENDECA}"/S95endeca;
+        echo "The Symbolic Link S95endeca has been removed."
+fi)
+
 GW=$(/sbin/ip route | awk '/default/ { print $3 }')
 
 INTERFACE1=$(ip link | awk -F: ' $0 !~"lo|vir|wl|^[^1-2]" {print $2;getline}' | awk '{ gsub (" ", "", $0); print}')
@@ -38,11 +43,6 @@ INTERFACE2=$(ip link | awk -F: ' $0 !~"lo|vir|wl|^[^3-4]" {print $2;getline}' | 
 IP2=$(ifconfig "${INTERFACE2}" 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://')
 
 SUBNET2=$(/sbin/ifconfig "${INTERFACE2}" | grep Mask | cut -d":" -f4)
-
-ENDECA=$(if [[ "${HOSTNAMEVM}" == *end* ]] && [ -L "${PATH_ENDECA}"/S95endeca ]; then
-        sudo rm "${PATH_ENDECA}"/S95endeca;
-        echo "The Symbolic Link S95endeca has been removed."
-fi)
 
 echo "Hostname:${HOSTNAMEVM}"
 echo "GW:${GW}"
