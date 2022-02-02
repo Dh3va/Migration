@@ -32,27 +32,27 @@ fi)
 
 GW=$(/sbin/ip route | awk '/default/ { print $3 }')
 
-INTERFACE1=$(ip link | awk -F: ' $0 !~"lo|vir|wl|^[^1-2]" {print $2;getline}' | awk '{ gsub (" ", "", $0); print}')
+NETWORK_INFO=$(ip link | awk -F: ' $0 !~"lo|vir|wl|^[^0-9]" {print $2;getline}')
 
-IP1=$(ifconfig "${INTERFACE1}" 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://')
-
-SUBNET1=$(/sbin/ifconfig "${INTERFACE1}" | grep Mask | cut -d":" -f4)
-
-INTERFACE2=$(ip link | awk -F: ' $0 !~"lo|vir|wl|^[^3-4]" {print $2;getline}' | awk '{ gsub (" ", "", $0); print}')
-
-IP2=$(ifconfig "${INTERFACE2}" 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://')
-
-SUBNET2=$(/sbin/ifconfig "${INTERFACE2}" | grep Mask | cut -d":" -f4)
+IP_INFO=$(for i in $NETWORK_INFO; do
+    ip link | grep "${i}"| awk -F: ' $0 !~"lo|vir|wl|^[^0-9]" {print $2;getline}' | awk '{ gsub (" ", "", $0); print}'
+    if [[ $(ifconfig "${i}" 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://' | wc -c) -ne 0 ]]; then
+    ifconfig "${i}" 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://';
+    else
+    ip addr show "${i}" | grep inet | grep -v inet6 | awk '{print $2}' | awk '{split($0,a,"/"); print a[1]}';
+    fi
+    if [[ $(ifconfig "${i}" | grep ask | cut -d":" -f4 | wc -c) -ne 0 ]]; then
+    ifconfig "${i}" | grep ask | cut -d":" -f4;
+    else;
+    ifconfig "${i}"| grep -w inet |grep -v 127.0.0.1| awk '{print $4}' | cut -d ":" -f 2;
+    fi
+done )
 
 echo "Hostname:${HOSTNAMEVM}"
-echo "GW:${GW}"
-echo "Network-card1:${INTERFACE1}"
-echo "${INTERFACE1}_IP1:${IP1}"
-echo "SUBNET_1:${SUBNET1}"
-echo "Network-card2:${INTERFACE2}"
-echo "${INTERFACE2}_IP2:${IP2}"
-echo "SUBNET_2:${SUBNET2}"
 echo "ENDECA:${ENDECA}"
+echo "GW:${GW}"
+echo "${IP_INFO}"
+
 SCRIPT
 )
 
@@ -71,6 +71,10 @@ if [ -z "${JOB_ID}" ]; then
 fi
 
 IP_GATEWAY=$(echo "${RAW_INPUT}" | awk -F"GW:" '/GW:/{print $2}')
+
+for i in "${IP_INFO}"
+
+
 
 INTERFACE_1=$( echo "${RAW_INPUT}" | awk -F"card1:" '/card1:/{print $2}')
 
