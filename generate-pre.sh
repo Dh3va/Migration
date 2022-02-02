@@ -1,7 +1,7 @@
 #! /bin/bash
-# Version 1.0
-# Last review 27/01/2022
-# Author Alessandro
+# Version 2.0
+# Last review 02/02/2022
+# Author Alessandro PRANZO aka Dh3va
 
 # Define variables
 RED='\033[0;31m'
@@ -14,15 +14,15 @@ CWD=$(pwd)
 # Checks if the IP exists after the script name
 if [ -z "$1" ]; then echo -e "${RED}Where is the IP? Canard!${NC}" && exit 1; fi
 
-echo -e "${CYAN}Starting...${NCC}"
+echo -e "${CYAN}Starting script...${NCC}"
 
-# Stores the output of of 'script' in the variable $RAW_INPUT and if the hostname contains end and the file S95endeca exists removes the symbolic link
-RAW_INPUT=$(ssh -o StrictHostKeyChecking=no $USER@"$1" <<'SCRIPT' 
+# Stores output of 'script' in $RAW_INPUT, also, if hostname contains *end* and Symbolic link S95endeca exists removes Symbolic link
+# then prints Hostname GW and all NICs, tests RH6/7 commands to extract IP SUB per NIC
+RAW_INPUT=$(
+    ssh -o StrictHostKeyChecking=no $USER@"$1" <<'SCRIPT'
 
-# Setting variables
 PATH_ENDECA='/etc/rc3.d'
 
-# Script
 HOSTNAMEVM=$(hostname -s)
 
 ENDECA=$(if [[ "${HOSTNAMEVM}" == *end* ]] && [ -L "${PATH_ENDECA}"/S95endeca ]; then
@@ -34,68 +34,58 @@ GW=$(/sbin/ip route | awk '/default/ { print $3 }')
 
 NETWORK_INFO=$(ip link | awk -F: ' $0 !~"lo|vir|wl|^[^0-9]" {print $2;getline}')
 
-IP_INFO=$(for i in $NETWORK_INFO; do
-    ip link | grep "${i}"| awk -F: ' $0 !~"lo|vir|wl|^[^0-9]" {print $2;getline}' | awk '{ gsub (" ", "", $0); print}'
-    if [[ $(ifconfig "${i}" 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://' | wc -c) -ne 0 ]]; then
-    ifconfig "${i}" 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://';
+for i in $NETWORK_INFO; do
+    NET=$(ip link | grep "${i}"| awk -F: ' $0 !~"lo|vir|wl|^[^0-9]" {print $2;getline}' | awk '{ gsub (" ", "", $0); print}')
+        
+    RH6_IPADDR=$(ifconfig "${i}" 2>/dev/null|awk '/inet addr:/ {print $2}' | sed 's/addr://' | wc -c)
+    RH6_SUB=$(ifconfig "${i}" | grep Mask | cut -d":" -f4 | wc -c)
+
+    if [[ "${RH6_IPADDR}" -ne 0 ]]; then
+	    IP=$(ifconfig "${i}" 2>/dev/null | awk '/inet addr:/ {print $2}' | sed 's/addr://')
     else
-    ip addr show "${i}" | grep inet | grep -v inet6 | awk '{print $2}' | awk '{split($0,a,"/"); print a[1]}';
+	    IP=$(ip addr show "${i}" | grep inet | grep -v inet6 | awk '{print $2}' | awk '{split($0,a,"/"); print a[1]}')
     fi
-    if [[ $(ifconfig "${i}" | grep ask | cut -d":" -f4 | wc -c) -ne 0 ]]; then
-    ifconfig "${i}" | grep ask | cut -d":" -f4;
-    else;
-    ifconfig "${i}"| grep -w inet |grep -v 127.0.0.1| awk '{print $4}' | cut -d ":" -f 2;
+    if [[ "${RH6_SUB}" -ne 0 ]]; then
+	    SUB=$(ifconfig "${i}" | grep Mask | cut -d":" -f4)
+    else
+	    SUB=$(ifconfig "${i}" | grep -w netmask | awk '{print $4}' | sed 's/^.*netmask* //p')
     fi
-done )
+	echo "Net: ${NET} ${IP} ${SUB}"
+done
 
 echo "Hostname:${HOSTNAMEVM}"
 echo "ENDECA:${ENDECA}"
 echo "GW:${GW}"
-echo "${IP_INFO}"
-
 SCRIPT
 )
 
-# Generate the variables for the pre_failover_script parsing the RAW_INPUT variable
-VM_NAME=$( echo "${RAW_INPUT}" | awk -F"Hostname:" '/Hostname:/{print $2}')
-
-# Verifies if the executed pre failover script already exists 
-if [ -f "${CWD}"/executed_pre_"${VM_NAME}".sh ]; then echo -e "${RED}WARNING${NC}:The pre failover script for${NC} ${CYAN}${VM_NAME}${NC} has been already executed!" && exit 1; fi
-
-JOB_ID=$("${CWD}"/list_jobs.sh | grep "${VM_NAME}" | awk -F"mnt/" '/mnt/{print $2}')
-
-# Checks if a job exists for the vm name
-if [ -z "${JOB_ID}" ]; then 
-        echo -e "${RED}The job ID for${NC} ${VM_NAME} ${RED}doesn't exist.${NC}";
-        exit 1; 
-fi
+# Generate variables for pre_failover_script parsing $RAW_INPUT
+VM_NAME=$(echo "${RAW_INPUT}" | awk -F"Hostname:" '/Hostname:/{print $2}')
 
 IP_GATEWAY=$(echo "${RAW_INPUT}" | awk -F"GW:" '/GW:/{print $2}')
 
-for i in "${IP_INFO}"
+# Checks if a job exists for vm name
+if [ -z "${JOB_ID}" ]; then
+    echo -e "${RED}The job ID for${NC} ${VM_NAME} ${RED}doesn't exist.${NC}"
+    exit 1
+fi
 
+# If Job exist it uses the script ./list_jobs.sh to get the job id
+JOB_ID=$("${CWD}"/list_jobs.sh | grep "${VM_NAME}" | awk -F"mnt/" '/mnt/{print $2}')
 
+# Verifies if executed pre failover script already exists for vm name
+if [ -f "${CWD}"/executed_pre_"${VM_NAME}".sh ]; then echo -e "${RED}WARNING${NC}:The pre failover script for${NC} ${CYAN}${VM_NAME}${NC} has been already executed!" && exit 1; fi
 
-INTERFACE_1=$( echo "${RAW_INPUT}" | awk -F"card1:" '/card1:/{print $2}')
-
-IP_1=$( echo "${RAW_INPUT}" | awk -F"IP1:" '/IP1:/{print $2}')
-
-SUB_1=$( echo "${RAW_INPUT}" | awk -F"NET_1:" '/NET_1:/{print $2}')
-
-INTERFACE_2=$( echo "${RAW_INPUT}" | awk -F"card2:" '/card2:/{print $2}')
-
-IP_2=$( echo "${RAW_INPUT}" | awk -F"IP2:" '/IP2:/{print $2}')
-
-SUB_2=$( echo "${RAW_INPUT}" | awk -F"NET_2:" '/NET_2:/{print $2}')
-
-# Prints the value of ENDECA in case the Symbolic Link has been removed
-ENDECA=$( echo "${RAW_INPUT}" | awk -F"ENDECA:" '/ENDECA:/{print $2}')
-
-# Removing existing pre_failover_script file for the ECL2 instance in current directory
+# Removing existing pre_failover_script for vm name in CWD
 rm -rf "${CWD}"/pre_failover_script_"${VM_NAME}".sh
 
-# Define pre_failover_script variable
-PRE_FAILOVER_SCRIPT_LOCATION="${CWD}"/pre_failover_script_${VM_NAME}.sh
+# Define pre_failover_script location and name
+PRE_FAILOVER_SCRIPT_LOCATION="${CWD}"/pre_failover_script_"${VM_NAME}".sh
+
+# Export the value of both variables into input.sh
+export PRE_FAILOVER_SCRIPT_LOCATION
+export VM_NAME
+./input.sh
 
 # Generate ifcfg-eth* file based on information gathered above
 echo "#! /bin/bash
@@ -113,27 +103,9 @@ echo \"GATEWAY=${IP_GATEWAY}\" >> \$PATH_TO_JOB_ID\$PATH_TO_GATEWAY_FILE
 rm -f \$PATH_TO_JOB_ID\$CLOUD_INIT_LOCAL_STARTUP_SCRIPT
 rm -f \$PATH_TO_JOB_ID\$CLOUD_INIT_STARTUP_SCRIPT
 rm -f \$PATH_TO_JOB_ID\$CLOUD_CONFIG_STARTUP_SCRIPT
-rm -f \$PATH_TO_JOB_ID\$CLOUD_FINAL_STARTUP_SCRIPT" > "${PRE_FAILOVER_SCRIPT_LOCATION}"
-echo "sed '/^BOOTPROTO/d' \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE_1} > \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE_1}.new
-{
-        echo 'NAME=${INTERFACE_1}'
-        echo 'IPADDR=${IP_1}'
-        echo 'NETMASK=${SUB_1}'
-        echo 'BOOTPROTO=static'
-} >> \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE_1}.new
-cp \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE_1} \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE_1}.ori
-mv \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE_1}.new \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE_1}
-rm \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE_1}.ori" >> "${PRE_FAILOVER_SCRIPT_LOCATION}"
-echo "sed '/^BOOTPROTO/d' \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE_2} > \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE_2}.new
-{
-        echo 'NAME=${INTERFACE_2}'
-        echo 'IPADDR=${IP_2}'
-        echo 'NETMASK=${SUB_2}'
-        echo 'BOOTPROTO=static'
-} >> \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE_2}.new
-cp \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE_2} \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE_2}.ori
-mv \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE_2}.new \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE_2}
-rm \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE_2}.ori" >> "${PRE_FAILOVER_SCRIPT_LOCATION}"
+rm -f \$PATH_TO_JOB_ID\$CLOUD_FINAL_STARTUP_SCRIPT" >"${PRE_FAILOVER_SCRIPT_LOCATION}"
+
+echo "${RAW_INPUT}" | grep -e '^Net:' | sed "s/Net: //g" | xargs -l ./input.sh
 
 # Prints ENDECA only if not empty
 if [ -n "${ENDECA}" ]; then echo -e "${CYAN}${ENDECA}${NC}"; fi
@@ -144,13 +116,13 @@ echo -e "${CYAN}done.${NCC}"
 
 echo -e "${CYAN}The Pre Failover Script has been generated for ${VM_NAME}${NCC}."
 
-# Runs the script locally
-./pre_failover_script_"${VM_NAME}".sh
+# # Runs the script locally
+# ./pre_failover_script_"${VM_NAME}".sh
 
-echo -e "The script ${CYAN}/pre_failover_script_${VM_NAME}.sh${NCC} has been \e[32mexecuted${NCC} and renamed."
+# echo -e "The script ${CYAN}/pre_failover_script_${VM_NAME}.sh${NCC} has been \e[32mexecuted${NCC} and renamed."
 
-# Renames the script from pre_failover to executed
-mv "${CWD}"/pre_failover_script_"${VM_NAME}".sh "${CWD}"/executed_pre_"${VM_NAME}".sh
+# # Renames the script from pre_failover to executed
+# mv "${CWD}"/pre_failover_script_"${VM_NAME}".sh "${CWD}"/executed_pre_"${VM_NAME}".sh
 
-# Removes execute permission for security reasons
-chmod -x "${CWD}"/executed_pre_"${VM_NAME}".sh
+# # Removes execute permission for security reasons
+# chmod -x "${CWD}"/executed_pre_"${VM_NAME}".sh
