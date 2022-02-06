@@ -1,9 +1,10 @@
 #! /bin/bash
+CWD=$(pwd)
+PRE_FAILOVER_SCRIPT_LOCATION="${CWD}"/pre_failover_script_${VM_NAME}.sh
 
 INTERFACE=$1
 IP=$2
 SUB=$3
-PRE_FAILOVER_SCRIPT_LOCATION=$4
 
 echo "sed '/^BOOTPROTO/d' \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE} > \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE}.new
 {

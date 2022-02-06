@@ -10,16 +10,20 @@ NCC="\e[0m"
 CYAN='\e[96m'
 USER='custuser'
 CWD=$(pwd)
+INPUT='/input.sh'
 
 # Checks if the IP exists after the script name
 if [ -z "$1" ]; then echo -e "${RED}Where is the IP? Canard!${NC}" && exit 1; fi
+
+# Check if input.sh exists in current working directory
+if [ -z "${CWD}""${INPUT}" ]; then echo -e "${RED}WARNING: The script ${INPUT} is missing in ${CWD}!${NC}" && exit 1; fi
 
 echo -e "${CYAN}Starting script...${NCC}"
 
 # Stores output of 'script' in $RAW_INPUT, also, if hostname contains *end* and Symbolic link S95endeca exists removes Symbolic link
 # then prints Hostname GW and all NICs, tests RH6/7 commands to extract IP SUB per NIC
 RAW_INPUT=$(
-    ssh -o StrictHostKeyChecking=no $USER@"$1" <<'SCRIPT'
+    ssh -o StrictHostKeyChecking=no "${USER}"@"${1}" <<'SCRIPT'
 
 PATH_ENDECA='/etc/rc3.d'
 
@@ -34,7 +38,7 @@ GW=$(/sbin/ip route | awk '/default/ { print $3 }')
 
 NETWORK_INFO=$(ip link | awk -F: ' $0 !~"lo|vir|wl|^[^0-9]" {print $2;getline}')
 
-for i in $NETWORK_INFO; do
+for i in "${NETWORK_INFO}"; do
     NET=$(ip link | grep "${i}"| awk -F: ' $0 !~"lo|vir|wl|^[^0-9]" {print $2;getline}' | awk '{ gsub (" ", "", $0); print}')
         
     RH6_IPADDR=$(ifconfig "${i}" 2>/dev/null|awk '/inet addr:/ {print $2}' | sed 's/addr://' | wc -c)
@@ -62,16 +66,19 @@ SCRIPT
 # Generate variables for pre_failover_script parsing $RAW_INPUT
 VM_NAME=$(echo "${RAW_INPUT}" | awk -F"Hostname:" '/Hostname:/{print $2}')
 
+# Prints the value of ENDECA in case the Symbolic Link has been removed
+ENDECA=$( echo "${RAW_INPUT}" | awk -F"ENDECA:" '/ENDECA:/{print $2}')
+
 IP_GATEWAY=$(echo "${RAW_INPUT}" | awk -F"GW:" '/GW:/{print $2}')
+
+# If Job exist it uses the script ./list_jobs.sh to get the job id
+JOB_ID=$("${CWD}"/list_jobs.sh | grep "${VM_NAME}" | awk -F"mnt/" '/mnt/{print $2}')
 
 # Checks if a job exists for vm name
 if [ -z "${JOB_ID}" ]; then
     echo -e "${RED}The job ID for${NC} ${VM_NAME} ${RED}doesn't exist.${NC}"
     exit 1
 fi
-
-# If Job exist it uses the script ./list_jobs.sh to get the job id
-JOB_ID=$("${CWD}"/list_jobs.sh | grep "${VM_NAME}" | awk -F"mnt/" '/mnt/{print $2}')
 
 # Verifies if executed pre failover script already exists for vm name
 if [ -f "${CWD}"/executed_pre_"${VM_NAME}".sh ]; then echo -e "${RED}WARNING${NC}:The pre failover script for${NC} ${CYAN}${VM_NAME}${NC} has been already executed!" && exit 1; fi
@@ -89,6 +96,7 @@ export VM_NAME
 
 # Generate ifcfg-eth* file based on information gathered above
 echo "#! /bin/bash
+# Generated automatically by pre-failover-generator.sh
 
 PATH_TO_JOB_ID=/opt/dbtk/mnt/${JOB_ID}
 PATH_TO_UDEV_NET_RULES_FILES=/etc/udev/rules.d
