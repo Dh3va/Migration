@@ -137,12 +137,12 @@ echo -e "${CYAN}done.${NCC}"
 echo -e "${CYAN}The Pre Failover Script has been generated for ${VM_NAME}${NCC}."
 
 # # Runs the script locally
-# ./pre_failover_script_"${VM_NAME}".sh
+./pre_failover_script_"${VM_NAME}".sh
 
-# echo -e "The script ${CYAN}/pre_failover_script_${VM_NAME}.sh${NCC} has been \e[32mexecuted${NCC} and renamed."
+echo -e "The script ${CYAN}/pre_failover_script_${VM_NAME}.sh${NCC} has been \e[32mexecuted${NCC} and renamed."
 
-# # Renames the script from pre_failover to executed
-# mv "${CWD}"/pre_failover_script_"${VM_NAME}".sh "${CWD}"/executed_pre_"${VM_NAME}".sh
+# Renames the script from pre_failover to executed
+mv "${CWD}"/pre_failover_script_"${VM_NAME}".sh "${CWD}"/executed_pre_"${VM_NAME}".sh
 
-# # Removes execute permission for security reasons
-# chmod -x "${CWD}"/executed_pre_"${VM_NAME}".sh
+# Removes execute permission for security reasons
+chmod -x "${CWD}"/executed_pre_"${VM_NAME}".sh
