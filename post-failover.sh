@@ -12,14 +12,19 @@ USER='custuser'
 if [ -z "$1" ]; then echo -e "${RED}Where is the IP? Canard!${NC}" && exit 1; fi
 
 ssh -o StrictHostKeyChecking=no "$USER"@"$1" <<'SCRIPT'
-PATH_ENDECA='/etc/rc3.d'
+PATH_SL='/etc/rc3.d'
 HOSTNAME="$(hostname -s)"
 NC="\e[0m"
 CYAN='\e[96m'
 
-if [[ "${HOSTNAME}" == *end* ]] && [ ! -L "${PATH_ENDECA}"/S95endeca ]; then
+if [[ "${HOSTNAME}" == *end* ]] && [ ! -L "${PATH_SL}"/S85nginx ]; then
         sudo ln -s /etc/init.d/endeca /etc/rc3.d/S95endeca
         echo -e "${CYAN}The Symbolic Link S95endeca has been re-created.${NC}"
+fi
+
+if [[ "${HOSTNAME}" == *oc* ]] && [ ! -L "${PATH_SL}"/S85nginx ]; then
+        sudo ln -s /etc/init.d/nginx /etc/rc3.d/S85nginx
+        echo -e "${CYAN}The Symbolic Link S85nginx has been re-created.${NC}"
 fi
 
 # Install VMWare Tools on the target instance
