@@ -43,8 +43,8 @@ GW=$(/sbin/ip route | awk '/default/ { print $3 }')
 
 NETWORK_INFO=$(ip link | awk -F: ' $0 !~"lo|vir|wl|^[^0-9]" {print $2;getline}')
 
-for i in "${NETWORK_INFO}"; do
-    NET=$(ip link | grep "${i}"| awk -F: ' $0 !~"lo|vir|wl|^[^0-9]" {print $2;getline}' | awk '{ gsub (" ", "", $0); print}')
+for i in ${NETWORK_INFO}; do
+    NET=$(ip link | grep "${i}" | awk -F: ' $0 !~"lo|vir|wl|^[^0-9]" {print $2;getline}' | awk '{ gsub (" ", "", $0); print}')
         
     RH6_IPADDR=$(ifconfig "${i}" 2>/dev/null|awk '/inet addr:/ {print $2}' | sed 's/addr://' | wc -c)
     RH6_SUB=$(ifconfig "${i}" | grep Mask | cut -d":" -f4 | wc -c)
@@ -70,15 +70,15 @@ SCRIPT
 )
 
 # Generate variables for pre_failover_script parsing $RAW_INPUT
-VM_NAME=$( echo "${RAW_INPUT}" | awk -F"Hostname:" '/Hostname:/{print $2}')
+VM_NAME=$(echo "${RAW_INPUT}" | awk -F"Hostname:" '/Hostname:/{print $2}')
 
 # Prints the value of ENDECA in case the Symbolic Link has been removed
-ENDECA=$( echo "${RAW_INPUT}" | awk -F"ENDECA:" '/ENDECA:/{print $2}')
+ENDECA=$(echo "${RAW_INPUT}" | awk -F"ENDECA:" '/ENDECA:/{print $2}')
 
 # Prints the value of NGINX in case the Symbolic Link has been removed
-NGINX=$( echo "${RAW_INPUT}" | awk -F"NGINX:" '/NGINX:/{print $2}')
+NGINX=$(echo "${RAW_INPUT}" | awk -F"NGINX:" '/NGINX:/{print $2}')
 
-IP_GATEWAY=$( echo "${RAW_INPUT}" | awk -F"GW:" '/GW:/{print $2}')
+IP_GATEWAY=$(echo "${RAW_INPUT}" | awk -F"GW:" '/GW:/{print $2}')
 
 # If Job exist it uses the script ./list_jobs.sh to get the job id
 JOB_ID=$("${CWD}"/list_jobs.sh | grep "${VM_NAME}" | awk -F"mnt/" '/mnt/{print $2}')

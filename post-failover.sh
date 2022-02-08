@@ -22,11 +22,6 @@ if [[ "${HOSTNAME}" == *end* ]] && [ ! -L "${PATH_SL}"/S85nginx ]; then
         echo -e "${CYAN}The Symbolic Link S95endeca has been re-created.${NC}"
 fi
 
-if [[ "${HOSTNAME}" == *oc* ]] && [ ! -L "${PATH_SL}"/S85nginx ]; then
-        sudo ln -s /etc/init.d/nginx /etc/rc3.d/S85nginx
-        echo -e "${CYAN}The Symbolic Link S85nginx has been re-created.${NC}"
-fi
-
 # Install VMWare Tools on the target instance
 sudo yum install open-vm-tools -y
 
