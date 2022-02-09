@@ -1,6 +1,6 @@
 #! /bin/bash
-# Version 2.1
-# Last review 07/02/2022
+# Version 2.2
+# Last review 09/02/2022
 # Author Dh3va
 
 # Define variables
@@ -20,7 +20,7 @@ if [ -z "${CWD}""${INPUT}" ]; then echo -e "${RED}WARNING: The script ${INPUT} i
 
 echo -e "${CYAN}Starting script...${NCC}"
 
-# Stores output of 'script' in $RAW_INPUT, also, if hostname contains *end*/*oc? and Symbolic link S95endeca/S85nginx exists removes Symbolic links
+# Stores output of 'script' in $RAW_INPUT, also, if hostname contains *end* and Symbolic link S95endeca exist removes Symbolic link
 # then prints Hostname GW and all NICs, tests RH6/7 commands to extract IP SUB per NIC
 RAW_INPUT=$(
     ssh -o StrictHostKeyChecking=no "${USER}"@"${1}" <<'SCRIPT'
@@ -32,11 +32,6 @@ HOSTNAMEVM=$(hostname -s)
 ENDECA=$(if [[ "${HOSTNAMEVM}" == *end* ]] && [ -L "${PATH_SL}"/S95endeca ]; then
         sudo rm "${PATH_SL}"/S95endeca;
         echo "The Symbolic Link S95endeca has been removed."
-fi)
-
-NGINX=$(if [[ "${HOSTNAMEVM}" == *oc* ]] && [ -L "${PATH_SL}"/S85nginx ]; then
-        sudo rm "${PATH_SL}"/S85nginx;
-        echo "The Symbolic Link S85nginx has been removed."
 fi)
 
 GW=$(/sbin/ip route | awk '/default/ { print $3 }')
@@ -64,7 +59,6 @@ done
 
 echo "Hostname:${HOSTNAMEVM}"
 echo "ENDECA:${ENDECA}"
-echo "NGINX:${NGINX}"
 echo "GW:${GW}"
 SCRIPT
 )
@@ -74,9 +68,6 @@ VM_NAME=$(echo "${RAW_INPUT}" | awk -F"Hostname:" '/Hostname:/{print $2}')
 
 # Prints the value of ENDECA in case the Symbolic Link has been removed
 ENDECA=$(echo "${RAW_INPUT}" | awk -F"ENDECA:" '/ENDECA:/{print $2}')
-
-# Prints the value of NGINX in case the Symbolic Link has been removed
-NGINX=$(echo "${RAW_INPUT}" | awk -F"NGINX:" '/NGINX:/{print $2}')
 
 IP_GATEWAY=$(echo "${RAW_INPUT}" | awk -F"GW:" '/GW:/{print $2}')
 
@@ -126,9 +117,6 @@ echo "${RAW_INPUT}" | grep -e '^Net:' | sed "s/Net: //g" | xargs -l ./input.sh
 
 # Prints ENDECA only if not empty
 if [ -n "${ENDECA}" ]; then echo -e "${CYAN}${ENDECA}${NC}"; fi
-
-# Prints NGINX only if not empty
-if [ -n "${NGINX}" ]; then echo -e "${CYAN}${NGINX}${NC}"; fi
 
 chmod 755 "${CWD}"/pre_failover_script_"${VM_NAME}".sh
 

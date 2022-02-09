@@ -1,6 +1,6 @@
 #! /bin/bash
-# Version 2.0
-# Last review 07/02/2022
+# Version 2.1
+# Last review 09/02/2022
 # Author Sam and Alessandro
 
 # Define variables
