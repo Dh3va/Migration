@@ -17,7 +17,7 @@ HOSTNAME="$(hostname -s)"
 NC="\e[0m"
 CYAN='\e[96m'
 
-if [[ "${HOSTNAME}" == *end* ]] && [ ! -L "${PATH_SL}"/S85nginx ]; then
+if [[ "${HOSTNAME}" == *end* ]] && [ ! -L "${PATH_SL}"/S95nginx ]; then
         sudo ln -s /etc/init.d/endeca /etc/rc3.d/S95endeca
         echo -e "${CYAN}The Symbolic Link S95endeca has been re-created.${NC}"
 fi
