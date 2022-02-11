@@ -9,7 +9,7 @@ SUB=$3
 
 if [[ ! -f "${PATH_IFCFG}"/ifcfg-"${1}" ]]; then
 
-        echo "BOOTPROTO" >> \"${PATH_IFCFG}"/ifcfg-"${INTERFACE}"
+        echo "BOOTPROTO" >> \${PATH_IFCFG}/ifcfg-"${INTERFACE}"
 
         echo "sed '/^BOOTPROTO/d' \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE} > \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE}.new
         {
