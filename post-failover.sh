@@ -27,7 +27,7 @@ sudo yum install open-vm-tools -y
 
 # Remove Cloud Init package
 CLOUD_INIT_RPM=$(sudo rpm -aq | grep cloud-init)
-if [ -n "${CLOUD_INIT_RPM}" ]; then 
+if [ -n "${CLOUD_INIT_RPM}" ]; then
         sudo rpm -e "$CLOUD_INIT_RPM"
 fi
 

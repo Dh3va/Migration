@@ -1,24 +1,29 @@
 #! /bin/bash
-# Version 2.2
-# Last review 09/02/2022
-# Author Dh3va
+# version 2.3.1
+# last review 10/02/2022
+# author Dh3va
 
 # Define variables
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 NCC="\e[0m"
 CYAN='\e[96m'
+GREEN='\e[32m'
 USER='custuser'
 CWD=$(pwd)
 INPUT='/input.sh'
+LIST_JOBS='/list_jobs.sh'
 
 # Checks if the IP exists after the script name
 if [ -z "$1" ]; then echo -e "${RED}Where is the IP? Canard!${NC}" && exit 1; fi
 
 # Check if input.sh exists in current working directory
-if [ -z "${CWD}""${INPUT}" ]; then echo -e "${RED}WARNING: The script ${INPUT} is missing in ${CWD}!${NC}" && exit 1; fi
+if [ ! -e "${CWD}""${INPUT}" ]; then echo -e "${RED}WARNING:${NC} The script ${INPUT} is missing in ${CWD}." && exit 1; fi
 
-echo -e "${CYAN}Starting script...${NCC}"
+# Check if list_jobs.sh exists in current working directory
+if [ ! -e "${CWD}""${LIST_JOBS}" ]; then echo -e "${RED}WARNING:${NC} The script ${LIST_JOBS} is missing in ${CWD}." && exit 1; fi
+
+echo -e "${CYAN}Starting script:${NCC}"
 
 # Stores output of 'script' in $RAW_INPUT, also, if hostname contains *end* and Symbolic link S95endeca exist removes Symbolic link
 # then prints Hostname GW and all NICs, tests RH6/7 commands to extract IP SUB per NIC
@@ -63,6 +68,17 @@ echo "GW:${GW}"
 SCRIPT
 )
 
+echo -ne "${CYAN}Collecting VM info: ${NCC}"
+
+if [[ ! -z "${RAW_INPUT}" ]]; then
+        sleep 0.5
+        echo -e "                         [ ${GREEN}OK${NC} ]"
+else
+        sleep 0.5
+        echo -e "                         [ ${RED}FAIL${NCC} ]"
+        exit 1
+fi
+
 # Generate variables for pre_failover_script parsing $RAW_INPUT
 VM_NAME=$(echo "${RAW_INPUT}" | awk -F"Hostname:" '/Hostname:/{print $2}')
 
@@ -71,17 +87,34 @@ ENDECA=$(echo "${RAW_INPUT}" | awk -F"ENDECA:" '/ENDECA:/{print $2}')
 
 IP_GATEWAY=$(echo "${RAW_INPUT}" | awk -F"GW:" '/GW:/{print $2}')
 
+echo -ne "${CYAN}Check Job ID: ${NCC}"
+
 # If Job exist it uses the script ./list_jobs.sh to get the job id
 JOB_ID=$("${CWD}"/list_jobs.sh | grep "${VM_NAME}" | awk -F"mnt/" '/mnt/{print $2}')
 
 # If it doesn't exist exit
 if [ -z "${JOB_ID}" ]; then
-    echo -e "${RED}The job ID for${NC} ${VM_NAME} ${RED}doesn't exist.${NC}"
+    sleep 0.5
+    echo -e "                               [ ${RED}FAIL${NCC} ]"
+    echo -e "${RED}WARNING:${NC} The job ID for ${VM_NAME} doesn't exist."
     exit 1
+else
+    sleep 0.5
+    echo -e "                               [ ${GREEN}OK${NC} ]"
 fi
 
+echo -ne "${CYAN}Check if already ran on VM: ${NCC}"
+
 # Verifies if executed pre failover script already exists for vm name
-if [ -f "${CWD}"/executed_pre_"${VM_NAME}".sh ]; then echo -e "${RED}WARNING${NC}:The pre failover script for${NC} ${CYAN}${VM_NAME}${NC} has been already executed!" && exit 1; fi
+if [ -f "${CWD}"/executed_pre_"${VM_NAME}".sh ]; then 
+    sleep 0.5
+    echo -e "                 [ ${RED}FAIL${NCC} ]"
+    echo -e "${RED}WARNING${NC}:The pre failover script for ${VM_NAME} has been already executed!"
+    exit 1 
+else
+    sleep 0.5
+    echo -e "                 [ ${GREEN}OK${NC} ]"
+fi
 
 # Removing existing pre_failover_script for vm name in CWD
 rm -rf "${CWD}"/pre_failover_script_"${VM_NAME}".sh
@@ -93,6 +126,8 @@ PRE_FAILOVER_SCRIPT_LOCATION="${CWD}"/pre_failover_script_"${VM_NAME}".sh
 export PRE_FAILOVER_SCRIPT_LOCATION
 export VM_NAME
 ./input.sh
+
+echo -ne "${CYAN}Generating ifcfg config: ${NCC}"
 
 # Generate ifcfg-eth* file based on information gathered above
 echo "#! /bin/bash
@@ -115,19 +150,27 @@ rm -f \$PATH_TO_JOB_ID\$CLOUD_FINAL_STARTUP_SCRIPT" >"${PRE_FAILOVER_SCRIPT_LOCA
 
 echo "${RAW_INPUT}" | grep -e '^Net:' | sed "s/Net: //g" | xargs -l ./input.sh
 
+if [ ! -f ${PRE_FAILOVER_SCRIPT_LOCATION} ]; then 
+    sleep 0.5
+    echo -e "                    [ ${RED}FAIL${NCC} ]"
+    echo -e "${RED}WARNING${NC}:The pre failover script for ${VM_NAME} has not been generated."
+    exit 1 
+else
+    sleep 0.5
+    echo -e "                    [ ${GREEN}OK${NC} ]"
+fi
+
 # Prints ENDECA only if not empty
 if [ -n "${ENDECA}" ]; then echo -e "${CYAN}${ENDECA}${NC}"; fi
 
 chmod 755 "${CWD}"/pre_failover_script_"${VM_NAME}".sh
 
-echo -e "${CYAN}done.${NCC}"
-
 echo -e "${CYAN}The Pre Failover Script has been generated for ${VM_NAME}${NCC}."
 
-# # Runs the script locally
+# Runs the script locally
 ./pre_failover_script_"${VM_NAME}".sh
 
-echo -e "The script ${CYAN}/pre_failover_script_${VM_NAME}.sh${NCC} has been \e[32mexecuted${NCC} and renamed."
+echo -e "${CYAN}The script /pre_failover_script_${VM_NAME}.sh has been${NCC} ${GREEN}executed${NCC} ${CYAN}and renamed.${NCC}"
 
 # Renames the script from pre_failover to executed
 mv "${CWD}"/pre_failover_script_"${VM_NAME}".sh "${CWD}"/executed_pre_"${VM_NAME}".sh
