@@ -1,15 +1,15 @@
 #! /bin/bash
 CWD=$(pwd)
-PRE_FAILOVER_SCRIPT_LOCATION="${CWD}"/pre_failover_script_${VM_NAME}.sh
-PATH_IFCFG="${JOB_ID}"/etc/sysconfig/network-scripts
+PRE_FAILOVER_SCRIPT_LOCATION="${CWD}"/pre_failover_script_"${VM_NAME}".sh
+PATH_JOB=/opt/dbtk/mnt/
+PATH_IFCFG="${PATH_JOB}""${JOB_ID}"/etc/sysconfig/network-scripts
 
 INTERFACE=$1
 IP=$2
 SUB=$3
 
-if [[ ! -f "${PATH_IFCFG}"/ifcfg-"${1}" ]]; then
-
-        echo "BOOTPROTO" >> \${PATH_IFCFG}/ifcfg-"${INTERFACE}"
+if [[ ! -f "${PATH_IFCFG}"/ifcfg-"${INTERFACE}" ]]; then
+        echo "BOOTPROTO" >> "${PATH_IFCFG}"/ifcfg-"${INTERFACE}"
 
         echo "sed '/^BOOTPROTO/d' \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE} > \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE}.new
         {

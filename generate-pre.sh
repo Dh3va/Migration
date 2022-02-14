@@ -1,6 +1,6 @@
 #! /bin/bash
-# version 2.3.1
-# last review 10/02/2022
+# version 2.3.2
+# last review 14/02/2022
 # author Dh3va
 
 # Define variables
@@ -125,6 +125,7 @@ PRE_FAILOVER_SCRIPT_LOCATION="${CWD}"/pre_failover_script_"${VM_NAME}".sh
 # Export the value of both variables into input.sh
 export PRE_FAILOVER_SCRIPT_LOCATION
 export VM_NAME
+export JOB_ID
 ./input.sh
 
 echo -ne "${CYAN}Generating ifcfg config: ${NCC}"
