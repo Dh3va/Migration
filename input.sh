@@ -9,14 +9,18 @@ IP=$2
 SUB=$3
 
 if [[ ! -f "${PATH_IFCFG}"/ifcfg-"${INTERFACE}" ]]; then
-        echo "BOOTPROTO" >> "${PATH_IFCFG}"/ifcfg-"${INTERFACE}"
-
+        echo "BOOTPROTO" >> ${PATH_IFCFG}/ifcfg-${INTERFACE}
         echo "sed '/^BOOTPROTO/d' \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE} > \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE}.new
         {
                 echo 'NAME=${INTERFACE}'
+                echo 'DEVICE=${INTERFACE}'
                 echo 'IPADDR=${IP}'
                 echo 'NETMASK=${SUB}'
                 echo 'BOOTPROTO=static'
+                echo 'USERCTL=no'
+                echo 'TYPE=Ethernet'
+                echo 'PEERDNS=no'
+                echo 'ONBOOT=yes'
                 echo 'IPV6INIT=no'
                 echo 'NM_CONTROLLED=no'
         } >> \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE}.new
@@ -27,9 +31,13 @@ else
         echo "sed '/^BOOTPROTO/d' \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE} > \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE}.new
         {
                 echo 'NAME=${INTERFACE}'
+                echo 'DEVICE=${INTERFACE}'
                 echo 'IPADDR=${IP}'
                 echo 'NETMASK=${SUB}'
                 echo 'BOOTPROTO=static'
+                echo 'USERCTL=no'
+                echo 'TYPE=Ethernet'
+                echo 'PEERDNS=no'
                 echo 'IPV6INIT=no'
                 echo 'NM_CONTROLLED=no'
         } >> \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE}.new
