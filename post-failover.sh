@@ -1,7 +1,6 @@
 #! /bin/bash
-# Version 2.1
-# Last review 09/02/2022
-# Author Sam and Alessandro
+# version 2.1
+# last review 09/02/2022
 
 # Define variables
 RED='\033[0;31m'

@@ -1,4 +1,7 @@
 #! /bin/bash
+# version 2.0
+# last review 16/02/2022
+
 CWD=$(pwd)
 PRE_FAILOVER_SCRIPT_LOCATION="${CWD}"/pre_failover_script_"${VM_NAME}".sh
 PATH_JOB=/opt/dbtk/mnt/
