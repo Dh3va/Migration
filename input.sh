@@ -1,50 +1,28 @@
 #! /bin/bash
-# version 2.0
-# last review 16/02/2022
-
-CWD=$(pwd)
-PRE_FAILOVER_SCRIPT_LOCATION="${CWD}"/pre_failover_script_"${VM_NAME}".sh
-PATH_JOB=/opt/dbtk/mnt/
-PATH_IFCFG="${PATH_JOB}""${JOB_ID}"/etc/sysconfig/network-scripts
+# version 3.0
+# last review 18/02/2022
 
 INTERFACE=$1
 IP=$2
 SUB=$3
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+NCC="\e[0m"
+CYAN='\e[96m'
+GREEN='\e[32m'
 
-if [[ ! -f "${PATH_IFCFG}"/ifcfg-"${INTERFACE}" ]]; then
-        echo "BOOTPROTO" >> ${PATH_IFCFG}/ifcfg-${INTERFACE}
-        echo "sed '/^BOOTPROTO/d' \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE} > \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE}.new
-        {
-                echo 'NAME=${INTERFACE}'
-                echo 'DEVICE=${INTERFACE}'
-                echo 'IPADDR=${IP}'
-                echo 'NETMASK=${SUB}'
-                echo 'BOOTPROTO=static'
-                echo 'USERCTL=no'
-                echo 'TYPE=Ethernet'
-                echo 'PEERDNS=no'
-                echo 'ONBOOT=yes'
-                echo 'IPV6INIT=no'
-                echo 'NM_CONTROLLED=no'
-        } >> \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE}.new
-        cp \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE} \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE}.ori
-        mv \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE}.new \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE}
-        rm \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE}.ori" >> "${PRE_FAILOVER_SCRIPT_LOCATION}"
-else
-        echo "sed '/^BOOTPROTO/d' \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE} > \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE}.new
-        {
-                echo 'NAME=${INTERFACE}'
-                echo 'DEVICE=${INTERFACE}'
-                echo 'IPADDR=${IP}'
-                echo 'NETMASK=${SUB}'
-                echo 'BOOTPROTO=static'
-                echo 'USERCTL=no'
-                echo 'TYPE=Ethernet'
-                echo 'PEERDNS=no'
-                echo 'IPV6INIT=no'
-                echo 'NM_CONTROLLED=no'
-        } >> \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE}.new
-        cp \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE} \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE}.ori
-        mv \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE}.new \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE}
-        rm \$PATH_TO_JOB_ID\$PATH_TO_IFCFG_FILES/ifcfg-${INTERFACE}.ori" >> "${PRE_FAILOVER_SCRIPT_LOCATION}"
+PATH_JOB_IFCFG=/opt/dbtk/mnt/"${JOB_ID}"/etc/sysconfig/network-scripts
+INT_INFO="${PATH_JOB_IFCFG}"/ifcfg-"${INTERFACE}"
+
+# Checks if the interface exists, if it doesn't, it creates the interface with the right informations
+if [ ! -f "${INT_INFO}" ]; then
+        echo -e "NAME=${INTERFACE}\nDEVICE=${INTERFACE}\nONBOOT=yes\nBOOTPROTO=static\nTYPE=Ethernet\nIPADDR=${IP}\nNETMASK=${SUB}\nUSERCTL=no\nPEERDNS=no\nIPV6INIT=no\nNM_CONTROLLED=no" >> "${PATH_JOB_IFCFG}"/ifcfg-"${INTERFACE}"
+        echo -e "${CYAN}Creating ifcfg-${INTERFACE}${NCC}:                         [ ${GREEN}OK${NC} ]"
+fi
+
+# If the interface already exists, performs a grep to check if it contains "dhcp", if it does it will remove the old interface and replace it with the new one
+if grep -q dhcp "${INT_INFO}"; then
+        rm -f "${PATH_JOB_IFCFG}"/ifcfg-"${INTERFACE}"
+        echo -e "NAME=${INTERFACE}\nDEVICE=${INTERFACE}\nONBOOT=yes\nBOOTPROTO=static\nTYPE=Ethernet\nIPADDR=${IP}\nNETMASK=${SUB}\nUSERCTL=no\nPEERDNS=no\nIPV6INIT=no\nNM_CONTROLLED=no" >> "${PATH_JOB_IFCFG}"/ifcfg-"${INTERFACE}"
+        echo -e "${CYAN}Re-creating ifcfg-${INTERFACE}${NCC}:                      [ ${GREEN}OK${NC} ]"
 fi
