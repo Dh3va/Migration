@@ -1,6 +1,6 @@
 #! /bin/bash
-# version 2.1
-# last review 09/02/2022
+# version 2.2
+# last review 24/02/2022
 
 # Define variables
 RED='\033[0;31m'
@@ -8,7 +8,7 @@ NC='\033[0m' # No Color
 USER='custuser'
 
 # Checks if the IP exists after the script name
-if [ -z "$1" ]; then echo -e "${RED}Where is the IP? Canard!${NC}" && exit 1; fi
+if [ -z "$1" ]; then echo -e "${RED}WARNING:${NC} The IP is missing." && exit 1; fi
 
 ssh -o StrictHostKeyChecking=no "$USER"@"$1" <<'SCRIPT'
 PATH_SL='/etc/rc3.d'
@@ -35,6 +35,17 @@ DOUBLETAKE_RPM=$(sudo rpm -aq | grep DoubleTake)
 if [ -n "${DOUBLETAKE_RPM}" ]; then 
         sudo rpm -e "$DOUBLETAKE_RPM"
 fi
+
+echo -e "Disabling NetworkManager: "
+sudo systemctl stop NetworkManager
+
+sudo systemctl disable NetworkManager
+
+sudo systemctl enable network
+
+sudo systemctl restart network
+
+echo "Done."
 
 # Reboot the target instance to check network service is working properly
 sudo reboot

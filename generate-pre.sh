@@ -1,9 +1,16 @@
 #! /bin/bash
-# version 3.0
-# last review 18/02/2022
+# version 3.1.2
+# last review 24/02/2022
 # author Dh3va
 
-# Define variables
+# Variables
+LIST_JOBS='/list_jobs.sh'
+PATH_TO_GATEWAY_FILE='/etc/sysconfig/network'
+PATH_TO_UDEV_NET_RULES_FILES='/etc/udev/rules.d'
+CLOUD_INIT_LOCAL_STARTUP_SCRIPT='/etc/rc3.d/S50cloud-init-local'
+CLOUD_INIT_STARTUP_SCRIPT='/etc/rc3.d/S51cloud-init'
+CLOUD_CONFIG_STARTUP_SCRIPT='/etc/rc3.d/S52cloud-config'
+CLOUD_FINAL_STARTUP_SCRIPT='/etc/rc3.d/S53cloud-final'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 NCC="\e[0m"
@@ -12,16 +19,9 @@ GREEN='\e[32m'
 USER='custuser'
 CWD=$(pwd)
 INPUT='/input.sh'
-LIST_JOBS='/list_jobs.sh'
-PATH_TO_GATEWAY_FILE='/etc/sysconfig/network'
-PATH_TO_UDEV_NET_RULES_FILES='/etc/udev/rules.d'
-CLOUD_INIT_LOCAL_STARTUP_SCRIPT='/etc/rc3.d/S50cloud-init-local'
-CLOUD_INIT_STARTUP_SCRIPT='/etc/rc3.d/S51cloud-init'
-CLOUD_CONFIG_STARTUP_SCRIPT='/etc/rc3.d/S52cloud-config'
-CLOUD_FINAL_STARTUP_SCRIPT='/etc/rc3.d/S53cloud-final'
 
 # Checks if the IP exists after the script name
-if [ -z "$1" ]; then echo -e "${RED}Where is the IP? Canard!${NC}" && exit 1; fi
+if [ -z "$1" ]; then echo -e "${RED}WARNING:${NC} The IP is missing." && exit 1; fi
 
 # Check if input.sh exists in current working directory
 if [ ! -e "${CWD}""${INPUT}" ]; then echo -e "${RED}WARNING:${NC} The script ${INPUT} is missing in ${CWD}." && exit 1; fi
@@ -29,7 +29,7 @@ if [ ! -e "${CWD}""${INPUT}" ]; then echo -e "${RED}WARNING:${NC} The script ${I
 # Check if list_jobs.sh exists in current working directory
 if [ ! -e "${CWD}""${LIST_JOBS}" ]; then echo -e "${RED}WARNING:${NC} The script ${LIST_JOBS} is missing in ${CWD}." && exit 1; fi
 
-echo -e "${CYAN}Starting script:${NCC}"
+echo -e "${CYAN}Starting:${NCC}"
 
 # Stores output of 'script' in $RAW_INPUT, also, if hostname contains *end* and Symbolic link S95endeca exist removes Symbolic link
 # then prints Hostname GW and all NICs, tests RH6/7 commands to extract IP SUB per NIC
@@ -77,7 +77,7 @@ SCRIPT
 
 echo -ne "${CYAN}Collecting VM info: ${NCC}"
 
-if [[ ! -z "${RAW_INPUT}" ]]; then
+if [[ -n "${RAW_INPUT}" ]]; then
         sleep 0.5
         echo -e "                         [ ${GREEN}OK${NC} ]"
 else
@@ -137,40 +137,40 @@ if ! grep -q GATEWAY "${GATEWAY}"; then
     echo "GATEWAY=${IP_GATEWAY}" >> "${GATEWAY}"
 fi
 
-PERSISTENT="${PATH_TO_JOB_ID}""${PATH_TO_UDEV_NET_RULES_FILES}"/70-persistent-net.rules*
+PERSISTENT="${PATH_TO_JOB_ID}""${PATH_TO_UDEV_NET_RULES_FILES}"
 
 # Checks if all the Symbolic Links listed below exists, if they do, they get removed
-if [ -f "${PERSISTENT}" ]; then
-    rm -f "${PERSISTENT}"
-    echo "The 70-persisten rules have been removed."
+if [ -f "${PERSISTENT}"/70* ]; then
+    rm -f "${PERSISTENT}"/70*
+    echo -e "${CYAN}70-persisten rules removed:${NCC}                  [ ${GREEN}OK${NC} ]"
 fi
 
 S50CLOUD="${PATH_TO_JOB_ID}""${CLOUD_INIT_LOCAL_STARTUP_SCRIPT}"
 
 if [ -L "${S50CLOUD}" ]; then
     rm -f "${S50CLOUD}"
-    echo "The Symbolic Link S50cloud-init-local has been removed."
+    echo -e "${CYAN}SL S50cloud-init-local removed:${NCC}              [ ${GREEN}OK${NC} ]"
 fi
 
 S51CLOUD="${PATH_TO_JOB_ID}""${CLOUD_INIT_STARTUP_SCRIPT}"
 
 if [ -L "${S51CLOUD}" ]; then
     rm -f "${S51CLOUD}"
-    echo "The Symbolic Link S51cloud-init has been removed."
+    echo -e "${CYAN}SL S51cloud-init removed:${NCC}                    [ ${GREEN}OK${NC} ]"
 fi
 
 S52CLOUD="${PATH_TO_JOB_ID}""${CLOUD_CONFIG_STARTUP_SCRIPT}"
 
 if [ -L "${S52CLOUD}" ]; then
     rm -f "${S52CLOUD}"
-    echo "The Symbolic Link S52cloud-config has been removed."
+    echo -e "${CYAN}SL S52cloud-config removed:${NCC}                  [ ${GREEN}OK${NC} ]"
 fi
 
 S53CLOUD="${PATH_TO_JOB_ID}""${CLOUD_FINAL_STARTUP_SCRIPT}"
 
 if [ -L "${S53CLOUD}" ]; then
     rm -f "${S53CLOUD}"
-    echo "The Symbolic Link S53cloud-final has been removed."
+    echo -e "${CYAN}SL S53cloud-final removed:${NCC}                   [ ${GREEN}OK${NC} ]"
 fi
 
 # Prints ENDECA only if not empty

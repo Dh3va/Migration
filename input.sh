@@ -1,6 +1,6 @@
 #! /bin/bash
-# version 3.0
-# last review 18/02/2022
+# version 3.1
+# last review 21/02/2022
 
 INTERFACE=$1
 IP=$2
