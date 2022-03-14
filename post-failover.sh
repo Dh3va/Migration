@@ -32,7 +32,7 @@ fi
 
 # Remove DoubleTake (Carbonite) package
 DOUBLETAKE_RPM=$(sudo rpm -aq | grep DoubleTake)
-if [ -n "${DOUBLETAKE_RPM}" ]; then 
+if [ -n "${DOUBLETAKE_RPM}" ]; then
         sudo rpm -e "$DOUBLETAKE_RPM"
 fi
 

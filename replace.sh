@@ -6,7 +6,7 @@ NC='\033[0m' # No Color
 
 if [ -z "$1" ]; then echo -e "${RED}Where is the IP? Canard!${NC}" && exit 1; fi
 
-ssh -o StrictHostKeyChecking=no "$USER"@"$1" <<'SCRIPT' 
+ssh -o StrictHostKeyChecking=no "$USER"@"$1" <<'SCRIPT'
 
 PATH_SRO=/usr/share/DT
 PATH_DT=/etc/init.d/DT
